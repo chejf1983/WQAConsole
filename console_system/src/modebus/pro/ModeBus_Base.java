@@ -5,6 +5,7 @@
  */
 package modebus.pro;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import wqa.console.io.ShareIO;
 
@@ -16,7 +17,7 @@ public class ModeBus_Base {
 
     protected ShareIO io;
     protected byte addr = 0x00;
-    public static final int def_timeout = 400;
+    public static final int def_timeout = 300;
     public final int max_pack_len = 100;
     public final ReentrantLock io_lock = new ReentrantLock(true);
 
@@ -87,7 +88,11 @@ public class ModeBus_Base {
     }
 
     public byte[] ReadMemory(int memaddr, int mem_num, int timeout) throws Exception {
-        for (int retry = 0; retry < 3; retry++) {
+        return ReadMemory(memaddr, mem_num, 3, timeout);
+    }
+
+    public byte[] ReadMemory(int memaddr, int mem_num, int retry_num, int timeout) throws Exception {
+        for (int retry = 0; retry < retry_num; retry++) {
             byte[] ret = this.readmemory(memaddr, mem_num + retry, timeout);
             if (ret.length > 0) {
                 return ret;
@@ -97,6 +102,7 @@ public class ModeBus_Base {
     }
 
     private boolean writermemory(int memaddr, int mem_num, byte[] memorys, int timeout) throws Exception {
+        TimeUnit.MILLISECONDS.sleep(20);
         //发送读取命令
         this.io.SendData(ModbusPacket.WriterPacket(this.addr, memaddr, mem_num, memorys));
         //等待返回结果
@@ -132,8 +138,13 @@ public class ModeBus_Base {
     }
 
     public void WriterMemory(int memaddr, int mem_num, byte[] memorys, int timeout) throws Exception {
+        
+        WriterMemory(memaddr, mem_num, memorys, 3, timeout);
+    }
+
+    public void WriterMemory(int memaddr, int mem_num, byte[] memorys, int retry_num, int timeout) throws Exception {
         int retry = 0;
-        while (retry++ < 3) {
+        while (retry++ < retry_num) {
             if (this.writermemory(memaddr, mem_num, memorys, timeout)) {
                 return;
             }

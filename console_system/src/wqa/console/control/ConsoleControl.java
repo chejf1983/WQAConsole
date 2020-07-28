@@ -33,8 +33,8 @@ public class ConsoleControl {
     }
 
     public void Collect() {
+        this.instance.io_lock.lock();
         try {
-            this.instance.io_lock.lock();
             byte[] buffer = this.instance.ReadMemory(0x00, showName.length * 2, 200);
             CollectData data = new CollectData(showName.length);
             for (int i = 0; i < showName.length; i++) {
@@ -46,7 +46,7 @@ public class ConsoleControl {
         } catch (Exception ex) {
             CollectData.CreateEvent(new CollectData(8));
             this.SetMessage("采集失败");
-        }finally{
+        } finally {
             this.instance.io_lock.unlock();
         }
     }

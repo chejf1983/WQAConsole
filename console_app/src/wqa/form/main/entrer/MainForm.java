@@ -6,8 +6,6 @@
 package wqa.form.main.entrer;
 
 import java.awt.CardLayout;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -35,33 +33,30 @@ public class MainForm extends javax.swing.JFrame {
     private LogPane logpane = new LogPane();
     private JSplitPane chartAnddataSplit;
     public static final String timeFormat = "yyyy-MM-dd HH:mm:ss";
-
+    
     public MainForm() {
         initComponents();
-
+        
         chartAnddataSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, work_area, logpane);
         chartAnddataSplit.setResizeWeight(0.5);
         chartAnddataSplit.setDividerSize(15);
         chartAnddataSplit.setOneTouchExpandable(false);
         logpane.setVisible(false);
-        Button_ReadHistory.setVisible(false);
-
+        jButton2.setVisible(false);
+        
         Label_ComNameMouseClicked(null);
-
+        
         this.process_bar.setMaximum(100);
         this.process_bar.setMinimum(0);
         this.process_bar.setValue(0);
-
+        
         Panel_show.setLayout(new CardLayout());
         Panel_show.add(chartAnddataSplit);
         float time = (float) WQAPlatform.GetInstance().GetManager().CollectorInstance.intergeral / 60;
         this.TextField_time.setText(NahonConvert.TimData(time, 2) + "");
-
+        
         Date now = new Date();
         now.setTime(new Date().getTime() - 24 * 3600 * 1000);
-
-        this.TextField_start_time.setText(new SimpleDateFormat(timeFormat).format(now));
-        this.TextField_end_time.setText(new SimpleDateFormat(timeFormat).format(new Date()));
         instance = this;
     }
 
@@ -87,12 +82,7 @@ public class MainForm extends javax.swing.JFrame {
         Button_Config = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         jToggleButton1 = new javax.swing.JToggleButton();
-        Button_ReadHistory = new javax.swing.JButton();
         process_bar = new javax.swing.JProgressBar();
-        jLabel4 = new javax.swing.JLabel();
-        TextField_start_time = new javax.swing.JTextField();
-        jLabel5 = new javax.swing.JLabel();
-        TextField_end_time = new javax.swing.JTextField();
         Label_Pecent = new javax.swing.JLabel();
         Panel_show = new javax.swing.JPanel();
 
@@ -116,7 +106,7 @@ public class MainForm extends javax.swing.JFrame {
 
         jLabel2.setText("波特率:");
 
-        TextField_bandrate.setText("115200");
+        TextField_bandrate.setText("9600");
 
         ToggleButton_Open.setIcon(new javax.swing.ImageIcon(getClass().getResource("/wqa/form/main/resource/disconnect_32p.png"))); // NOI18N
         ToggleButton_Open.addActionListener(new java.awt.event.ActionListener() {
@@ -152,21 +142,6 @@ public class MainForm extends javax.swing.JFrame {
             }
         });
 
-        Button_ReadHistory.setText("读取控制器");
-        Button_ReadHistory.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                Button_ReadHistoryActionPerformed(evt);
-            }
-        });
-
-        jLabel4.setText("起始:");
-
-        TextField_start_time.setText("jTextField1");
-
-        jLabel5.setText("终止:");
-
-        TextField_end_time.setText("jTextField1");
-
         Label_Pecent.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         Label_Pecent.setText("--/--");
 
@@ -194,29 +169,15 @@ public class MainForm extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(Label_Pecent, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel4)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(TextField_start_time, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(TextField_time, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addComponent(jLabel1)
+                .addGap(33, 33, 33)
+                .addComponent(TextField_time, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel5)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(TextField_end_time, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel3)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(Button_Config)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(Button_ReadHistory, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(Button_Config)
+                .addGap(87, 87, 87)
+                .addComponent(jButton2)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -236,15 +197,9 @@ public class MainForm extends javax.swing.JFrame {
                     .addComponent(jLabel3)
                     .addComponent(Button_Config))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                    .addComponent(Button_ReadHistory)
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel4)
-                        .addComponent(TextField_start_time, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jLabel5)
-                        .addComponent(TextField_end_time, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jToggleButton1)
-                        .addComponent(Label_Pecent)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jToggleButton1)
+                    .addComponent(Label_Pecent))
                 .addGap(10, 10, 10)
                 .addComponent(process_bar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -280,14 +235,14 @@ public class MainForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void Label_ComNameMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_Label_ComNameMouseClicked
-
+        
         this.ComboBox_ComName.removeAllItems();
         for (String name : IOManager.GetInstance().ListAllIO()) {
             this.ComboBox_ComName.addItem(name);
         }
         this.ComboBox_ComName.updateUI();
     }//GEN-LAST:event_Label_ComNameMouseClicked
-
+    
     private void Switch(boolean value) throws Exception {
         if (value) {
             IOManager.GetInstance().OpenIO(ComboBox_ComName.getSelectedItem().toString(), TextField_bandrate.getText());
@@ -318,7 +273,7 @@ public class MainForm extends javax.swing.JFrame {
             this.ToggleButton_Open.setSelected(true);
             ToggleButton_OpenActionPerformed(null);
         }
-
+        
         Button_Search.setEnabled(false);
         ProcessData ret = WQAPlatform.GetInstance().GetManager().Search();
         WQAPlatform.GetInstance().GetThreadPool().submit(new Runnable() {
@@ -329,7 +284,7 @@ public class MainForm extends javax.swing.JFrame {
                         process_bar.setMaximum(ret.total_len);
                         process_bar.setValue(ret.current_len);
                     });
-
+                    
                     try {
                         TimeUnit.SECONDS.sleep(1);
                     } catch (InterruptedException ex) {
@@ -361,7 +316,7 @@ public class MainForm extends javax.swing.JFrame {
         WQAPlatform.GetInstance().GetManager().SaveTo(path);
         LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕");
     }//GEN-LAST:event_jButton2ActionPerformed
-
+    
     private int lastdivider = 320;
     private void jToggleButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton1ActionPerformed
         // TODO add your handling code here:
@@ -372,87 +327,31 @@ public class MainForm extends javax.swing.JFrame {
             lastdivider = chartAnddataSplit.getDividerLocation();
         }
     }//GEN-LAST:event_jToggleButton1ActionPerformed
-
+    
     public static MainForm instance;
     
-    public javax.swing.JProgressBar GetProcesBar(){
+    public javax.swing.JProgressBar GetProcesBar() {
         return this.process_bar;
     }
     
-    public JLabel GetPecentLable(){
+    public JLabel GetPecentLable() {
         return this.Label_Pecent;
     }
-    
-    private void Button_ReadHistoryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Button_ReadHistoryActionPerformed
-//        //获取起止时间
-//        Date start_time = null;
-//        Date stop_time = null;
-//        try {
-//            start_time = new SimpleDateFormat(timeFormat).parse(this.TextField_start_time.getText());
-//            stop_time = new SimpleDateFormat(timeFormat).parse(this.TextField_end_time.getText());
-//            this.TextField_start_time.setText(new SimpleDateFormat(timeFormat).format(start_time));
-//            this.TextField_end_time.setText(new SimpleDateFormat(timeFormat).format(stop_time));
-//            if (!start_time.before(stop_time)) {
-//                LogCenter.Instance().ShowMessBox(Level.SEVERE, "截至时间必须大于起始时间");
-//                return;
-//            }
-//        } catch (ParseException ex) {
-//            LogCenter.Instance().ShowMessBox(Level.SEVERE, ex.getMessage());
-//            return;
-//        }
-//
-//        Button_ReadHistory.setEnabled(false);
-//        String path = InitPaneHelper.GetDirPath();
-//        if (path == null) {
-//            Button_ReadHistory.setEnabled(true);
-//            return;
-//        }
-//
-//        ProcessData ret = WQAPlatform.GetInstance().GetManager().ExportTo(start_time, stop_time, path);
-//        WQAPlatform.GetInstance().GetThreadPool().submit(new Runnable() {
-//            @Override
-//            public void run() {
-//                while (!ret.isfinished) {
-//                    java.awt.EventQueue.invokeLater(() -> {
-//                        process_bar.setMaximum(ret.total_len);
-//                        process_bar.setValue(ret.current_len);
-//                        Label_Pecent.setText(ret.current_len + "/" + ret.total_len);
-//                    });
-//                    try {
-//                        TimeUnit.SECONDS.sleep(1);
-//                    } catch (InterruptedException ex) {
-//                        Logger.getLogger(MainForm.class.getName()).log(Level.SEVERE, null, ex);
-//                    }
-//                }
-//                java.awt.EventQueue.invokeLater(() -> {
-//                    process_bar.setValue(0);
-//                    Button_ReadHistory.setEnabled(true);
-//                    Label_Pecent.setText(ret.current_len + "/" + ret.total_len);
-//                });
-//                LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出结束");
-//            }
-//        });
-    }//GEN-LAST:event_Button_ReadHistoryActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Button_Config;
-    private javax.swing.JButton Button_ReadHistory;
     private javax.swing.JButton Button_Search;
     private javax.swing.JComboBox<String> ComboBox_ComName;
     private javax.swing.JLabel Label_ComName;
     private javax.swing.JLabel Label_Pecent;
     private javax.swing.JPanel Panel_show;
     private javax.swing.JTextField TextField_bandrate;
-    private javax.swing.JTextField TextField_end_time;
-    private javax.swing.JTextField TextField_start_time;
     private javax.swing.JTextField TextField_time;
     private javax.swing.JToggleButton ToggleButton_Open;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JToggleButton jToggleButton1;
     private javax.swing.JProgressBar process_bar;

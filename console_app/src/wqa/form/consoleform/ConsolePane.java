@@ -282,7 +282,6 @@ public class ConsolePane extends javax.swing.JPanel {
             ShowProcess();
         }
 
-
     }//GEN-LAST:event_Button_ReadHistoryActionPerformed
 
     private void Button_LoadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Button_LoadActionPerformed

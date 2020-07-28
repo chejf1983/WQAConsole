@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import modebus.pro.ModeBus_Base;
 import modebus.pro.NahonConvert;
@@ -70,6 +71,7 @@ public class ConsolHistory {
                 NahonConvert.Cat(NahonConvert.UShortToByteArray(channel),
                         NahonConvert.UShortToByteArray(id),
                         NahonConvert.UShortToByteArray(READCMD)),
+                5,
                 ModeBus_Base.def_timeout);
 
         byte[] mem = this.control.instance.ReadMemory(LOG.reg_add, LOG.reg_num, ModeBus_Base.def_timeout);
@@ -124,8 +126,9 @@ public class ConsolHistory {
     }
 
     public void SaveToExcel(String path, Date start, Date end, ProcessData data) {
+        this.control.instance.io_lock.lock();
+        long start_time = System.currentTimeMillis();
         try (XlsSheetWriter save_file = XlsSheetWriter.CreateSheet(path + "/控制器" + control.GetAddr() + "历史数据.xls", "data")) {
-            this.control.instance.io_lock.lock();
             this.InitHistoryLen();
 
             for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
@@ -158,6 +161,8 @@ public class ConsolHistory {
                 //跳过起始点之前的数据
                 data.current_len += s_point;
                 for (int log_id = s_point; log_id < e_point; log_id++) {
+                    //发送命令前休息10ms
+//                    TimeUnit.MILLISECONDS.sleep(10);
                     //去掉时间和状态，剩下得是数据个数
                     table.WriterLine(ReadData(cl_id, log_id, names.length - 3).GetValue());
                     data.current_len++;
@@ -167,7 +172,9 @@ public class ConsolHistory {
                 table.Finish();
             }
 
-            LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕");
+            start_time = System.currentTimeMillis() - start_time;
+            start_time = start_time / 1000;
+            LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕" + start_time / 60 + "分钟" + start_time % 60 + "秒");
         } catch (Exception ex) {
             LogCenter.Instance().SendFaultReport(Level.SEVERE, "保存数据失败" + ex);
         } finally {
@@ -176,8 +183,9 @@ public class ConsolHistory {
     }
 
     public void SaveToExcel(String path, ProcessData data) {
+        this.control.instance.io_lock.lock();
+        long start_time = System.currentTimeMillis();
         try (XlsSheetWriter save_file = XlsSheetWriter.CreateSheet(path + "/控制器" + control.GetAddr() + "历史数据.xls", "data")) {
-            this.control.instance.io_lock.lock();
             this.InitHistoryLen();
             for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
                 data.total_len += this.log_num[cl_id - 1];
@@ -195,13 +203,16 @@ public class ConsolHistory {
                 System.arraycopy(names, 1, pars, 0, pars.length);
                 xlsTable_W table = save_file.CreateNewTable(names[0], num, XlsSheetWriter.DirecTion.Horizontal, pars);
                 for (int log_id = 0; log_id < num; log_id++) {
+//                    TimeUnit.MILLISECONDS.sleep(10);
                     //去掉时间和状态，剩下得是数据个数
                     table.WriterLine(ReadData(cl_id, log_id, names.length - 3).GetValue());
                     data.current_len++;
                 }
                 table.Finish();
             }
-            LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕");
+            start_time = System.currentTimeMillis() - start_time;
+            start_time = start_time / 1000;
+            LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕" + start_time / 60 + "分钟" + start_time % 60 + "秒");
         } catch (Exception ex) {
             LogCenter.Instance().SendFaultReport(Level.SEVERE, "保存数据失败" + ex);
         } finally {
@@ -216,8 +227,8 @@ public class ConsolHistory {
 
     public void BackUp(String path, ProcessData data) {
         File bakfile = new File(path + "/控制器" + control.GetAddr() + "数据备份.bak");
+        this.control.instance.io_lock.lock();
         try (FileOutputStream outStream = new FileOutputStream(bakfile)) {
-            this.control.instance.io_lock.lock();
             outStream.flush();
             //写文件头信息
             outStream.write(NahonConvert.IntegerToByteArray(HEAD));
@@ -294,8 +305,8 @@ public class ConsolHistory {
 
     public void LoadBackUp(String path, ProcessData data) {
         File file = new File(path);
+        this.control.instance.io_lock.lock();
         try (FileInputStream inStream = new FileInputStream(file)) {
-            this.control.instance.io_lock.lock();
 
             byte[] Line = new byte[4];
             //读取文件头
