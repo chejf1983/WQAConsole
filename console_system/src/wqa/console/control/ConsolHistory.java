@@ -12,6 +12,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import modebus.pro.ModeBus_Base;
 import modebus.pro.NahonConvert;
 import modebus.pro.Register;
@@ -65,34 +67,38 @@ public class ConsolHistory {
         return total_num;
     }
 
-    //channel 通道号， id log编号， d_num 读取数据个数
-    private CollectData ReadData(int channel, int id, int d_num) throws Exception {
-        this.control.instance.WriterMemory(CID.reg_add, 3,
-                NahonConvert.Cat(NahonConvert.UShortToByteArray(channel),
-                        NahonConvert.UShortToByteArray(id),
-                        NahonConvert.UShortToByteArray(READCMD)),
-                5,
-                ModeBus_Base.def_timeout);
+    //channel 通道号， id log编号， d_num 读取数据个数, data 返回数据
+    private boolean ReadData(int channel, int id, int d_num, CollectData data) {
+        try {
+            this.control.instance.WriterMemory(CID.reg_add, 3,
+                    NahonConvert.Cat(NahonConvert.UShortToByteArray(channel),
+                            NahonConvert.UShortToByteArray(id),
+                            NahonConvert.UShortToByteArray(READCMD)),
+                    ModeBus_Base.def_timeout);
 
-        byte[] mem = this.control.instance.ReadMemory(LOG.reg_add, LOG.reg_num, ModeBus_Base.def_timeout);
-        int year = mem[0] * 100 + mem[1];
-        int month = mem[2];
-        int day = mem[3];
-        int hour = mem[4];
-        int min = mem[5];
-        int sec = mem[6];
-        int state = mem[7]; // 状态
+            byte[] mem = this.control.instance.ReadMemory(LOG.reg_add, LOG.reg_num, ModeBus_Base.def_timeout);
+            int year = mem[0] * 100 + mem[1];
+            int month = mem[2];
+            int day = mem[3];
+            int hour = mem[4];
+            int min = mem[5];
+            int sec = mem[6];
+            int state = mem[7]; // 状态
 
-        CollectData data = new CollectData(d_num);
-        String dateString = String.format("%d-%d-%d %d:%d:%d", year, month, day, hour, min, sec);
-        data.time = new SimpleDateFormat(CollectData.timeFormat).parse(dateString);
-        data.state = state;
-        for (int i = 0; i < d_num; i++) {
-            data.datas[i] = NahonConvert.ByteArrayToFloat(mem, 8 + i * 4);
+//            CollectData data = new CollectData(d_num);
+            String dateString = String.format("%d-%d-%d %d:%d:%d", year, month, day, hour, min, sec);
+            data.time = new SimpleDateFormat(CollectData.timeFormat).parse(dateString);
+            data.state = state;
+            for (int i = 0; i < d_num; i++) {
+                data.datas[i] = NahonConvert.ByteArrayToFloat(mem, 8 + i * 4);
+            }
+            return true;
+        } catch (Exception ex) {
+            return false;
         }
-        return data;
     }
 
+    //获取列表名称
     private String[] ReadDataName(int devtype) {
         DevConstTable.DevInfo info = DevConstTable.GetTable().namemap.get(devtype);
         if (info == null) {
@@ -109,12 +115,16 @@ public class ConsolHistory {
         return ret;
     }
 
+    //查找指定时间对应的数据，折半查找
     private int GetNearlistIndex(int cal_id, int start, int end, Date time) throws Exception {
         int mid = (int) ((end + start) / 2);
         if (mid == start) {
             return mid;
         } else {
-            CollectData read_data = ReadData(cal_id, mid, 0);
+            CollectData read_data = new CollectData(0);
+            if (!ReadData(cal_id, mid, 0, read_data)) {
+                throw new Exception("查询时间失败");
+            }
             if (time.compareTo(read_data.time) == 0) {
                 return mid;
             } else if (time.compareTo(read_data.time) < 0) {
@@ -123,6 +133,23 @@ public class ConsolHistory {
                 return GetNearlistIndex(cal_id, mid, end, time);
             }
         }
+    }
+
+    private int prompt_num = 0;
+
+    //提示异常
+    private boolean Prompting() {
+        int ret = JOptionPane.showConfirmDialog(null, "线路不稳,请检查线路后确认是否继续", "连接中断提示", JOptionPane.YES_NO_OPTION);
+
+        if (ret == JOptionPane.YES_OPTION) {
+            prompt_num++;
+            if (prompt_num > 1) {
+                prompt_num = 0;
+                this.control.Collect();
+            }
+        }
+
+        return ret == JOptionPane.YES_OPTION;
     }
 
     public void SaveToExcel(String path, Date start, Date end, ProcessData data) {
@@ -164,7 +191,18 @@ public class ConsolHistory {
                     //发送命令前休息10ms
 //                    TimeUnit.MILLISECONDS.sleep(10);
                     //去掉时间和状态，剩下得是数据个数
-                    table.WriterLine(ReadData(cl_id, log_id, names.length - 3).GetValue());
+                    CollectData read_data = new CollectData(names.length - 3);
+                    if (!ReadData(cl_id, log_id, names.length - 3, read_data)) {
+                        //读取失败，提示用户
+                        if (this.Prompting()) {
+                            //回滚一条数据
+                            log_id = log_id - 1;
+                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+                    table.WriterLine(read_data.GetValue());
                     data.current_len++;
                 }
                 //补上终点之后的数据个数
@@ -181,44 +219,56 @@ public class ConsolHistory {
             this.control.instance.io_lock.unlock();
         }
     }
-
-    public void SaveToExcel(String path, ProcessData data) {
-        this.control.instance.io_lock.lock();
-        long start_time = System.currentTimeMillis();
-        try (XlsSheetWriter save_file = XlsSheetWriter.CreateSheet(path + "/控制器" + control.GetAddr() + "历史数据.xls", "data")) {
-            this.InitHistoryLen();
-            for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
-                data.total_len += this.log_num[cl_id - 1];
-            }
-            for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
-                int devtype = this.dev_type[cl_id - 1];
-                //获取设备名称
-                String[] names = ReadDataName(devtype);
-                if (names == null) {
-                    continue;
-                }
-                int num = this.log_num[cl_id - 1];
-
-                String[] pars = new String[names.length - 1];
-                System.arraycopy(names, 1, pars, 0, pars.length);
-                xlsTable_W table = save_file.CreateNewTable(names[0], num, XlsSheetWriter.DirecTion.Horizontal, pars);
-                for (int log_id = 0; log_id < num; log_id++) {
-//                    TimeUnit.MILLISECONDS.sleep(10);
-                    //去掉时间和状态，剩下得是数据个数
-                    table.WriterLine(ReadData(cl_id, log_id, names.length - 3).GetValue());
-                    data.current_len++;
-                }
-                table.Finish();
-            }
-            start_time = System.currentTimeMillis() - start_time;
-            start_time = start_time / 1000;
-            LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕" + start_time / 60 + "分钟" + start_time % 60 + "秒");
-        } catch (Exception ex) {
-            LogCenter.Instance().SendFaultReport(Level.SEVERE, "保存数据失败" + ex);
-        } finally {
-            this.control.instance.io_lock.unlock();
-        }
-    }
+//
+//    public void SaveToExcel(String path, ProcessData data) {
+//        this.control.instance.io_lock.lock();
+//        long start_time = System.currentTimeMillis();
+//        try (XlsSheetWriter save_file = XlsSheetWriter.CreateSheet(path + "/控制器" + control.GetAddr() + "历史数据.xls", "data")) {
+//            this.InitHistoryLen();
+//            for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
+//                data.total_len += this.log_num[cl_id - 1];
+//            }
+//            for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
+//                int devtype = this.dev_type[cl_id - 1];
+//                //获取设备名称
+//                String[] names = ReadDataName(devtype);
+//                if (names == null) {
+//                    continue;
+//                }
+//                int num = this.log_num[cl_id - 1];
+//
+//                String[] pars = new String[names.length - 1];
+//                System.arraycopy(names, 1, pars, 0, pars.length);
+//                xlsTable_W table = save_file.CreateNewTable(names[0], num, XlsSheetWriter.DirecTion.Horizontal, pars);
+//                for (int log_id = 0; log_id < num; log_id++) {
+////                    TimeUnit.MILLISECONDS.sleep(10);
+//                    //去掉时间和状态，剩下得是数据个数
+//                    CollectData read_data = new CollectData(names.length - 3);
+//                    if (!ReadData(cl_id, log_id, names.length - 3, read_data)) {
+//                        //读取失败，提示用户
+//                        if (this.Prompting()) {
+//                            //回滚一条数据
+//                            log_id = log_id - 1;
+//                            continue;
+//                        } else {
+//                            break;
+//                        }
+//                    }
+//                    table.WriterLine(read_data.GetValue());
+////                    table.WriterLine(ReadData(cl_id, log_id, names.length - 3).GetValue());
+//                    data.current_len++;
+//                }
+//                table.Finish();
+//            }
+//            start_time = System.currentTimeMillis() - start_time;
+//            start_time = start_time / 1000;
+//            LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕" + start_time / 60 + "分钟" + start_time % 60 + "秒");
+//        } catch (Exception ex) {
+//            LogCenter.Instance().SendFaultReport(Level.SEVERE, "保存数据失败" + ex);
+//        } finally {
+//            this.control.instance.io_lock.unlock();
+//        }
+//    }
     // </editor-fold> 
 
     // <editor-fold defaultstate="collapsed" desc="数据备份">
