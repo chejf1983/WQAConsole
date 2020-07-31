@@ -6,7 +6,6 @@
 package wqa.console.manager;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import modebus.pro.ModeBus_Base;
@@ -96,33 +95,4 @@ public class ConsoleManager {
             list_lock.unlock();
         }
     }
-
-//    public ProcessData ExportTo(Date start_time, Date stop_time, String path) {
-//        if (!lastprocess.isfinished) {
-//            return lastprocess;
-//        }
-//        lastprocess = new ProcessData();
-//        WQAPlatform.GetInstance().GetThreadPool().submit(new Runnable() {
-//            @Override
-//            public void run() {
-//                list_lock.lock();
-//                try {
-//                    for (int i = 0; i < control_list.size(); i++) {
-//                        lastprocess.total_len += control_list.get(i).History.InitHistoryLen();
-//                    }
-//
-//                    for (int i = 0; i < control_list.size(); i++) {
-//                        control_list.get(i).History.SaveToExcel(path, start_time, stop_time, lastprocess);
-//                    }
-//                } catch (Exception ex) {
-//                    LogCenter.Instance().SendFaultReport(Level.SEVERE, ex);
-//                } finally {
-//                    list_lock.unlock();
-//                    lastprocess.isfinished = true;
-//                }
-//            }
-//        });
-//        return lastprocess;
-//    }
-
 }

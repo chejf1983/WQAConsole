@@ -10,17 +10,14 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JOptionPane;
 import modebus.pro.ModeBus_Base;
 import modebus.pro.NahonConvert;
 import modebus.pro.Register;
 import nahon.comm.exl2.XlsSheetWriter;
 import nahon.comm.exl2.xlsTable_W;
 import nahon.comm.faultsystem.LogCenter;
-import wqa.console.manager.DevConstTable;
+import wqa.adapter.factory.CDevDataTable;
 import wqa.console.manager.ProcessData;
 
 /**
@@ -100,17 +97,39 @@ public class ConsolHistory {
 
     //获取列表名称
     private String[] ReadDataName(int devtype) {
-        DevConstTable.DevInfo info = DevConstTable.GetTable().namemap.get(devtype);
+        //查询设备信息
+        CDevDataTable.DevInfo info = CDevDataTable.GetInstance().namemap.get(devtype);
+        String[] snames;
+        String sdev_name;
+        //未知设备信息
         if (info == null) {
-            return null;
+            sdev_name = "未知设备" + String.format("%X", devtype);//名称未知
+            snames = new String[4];//参数默认4个
+            for (int i = 0; i < snames.length; i++) {
+                snames[i] = "参数" + (i + 1);
+            }
+        } else {
+            //设备名称，中文名
+            sdev_name = info.dev_name_ch;
+            //获取设备信息，不带原始值，不带内部版本信息
+            CDevDataTable.DataInfo[] names = CDevDataTable.GetInstance().GetStanderDatas(devtype, false, false);
+            //超过4个参数，只读4个，协议只支持4个
+            if (names.length <= 4) {
+                snames = new String[names.length];
+            } else {
+                snames = new String[4];
+            }
+            for (int i = 0; i < snames.length; i++) {
+                snames[i] = names[i].data_name + names[i].data_unit;
+            }
         }
 
-        String[] ret = new String[info.data_list.length + 3];
-        ret[0] = info.dev_name_ch;
+        String[] ret = new String[snames.length + 3];
+        ret[0] = sdev_name;
         ret[1] = "(时间)";
         ret[2] = "状态";
-        for (int i = 0; i < info.data_list.length; i++) {
-            ret[i + 3] = info.data_list[i].data_name + info.data_list[i].data_unit;
+        for (int i = 0; i < snames.length; i++) {
+            ret[i + 3] = snames[i];
         }
         return ret;
     }
@@ -122,8 +141,11 @@ public class ConsolHistory {
             return mid;
         } else {
             CollectData read_data = new CollectData(0);
-            if (!ReadData(cal_id, mid, 0, read_data)) {
-                throw new Exception("查询时间失败");
+            while (!ReadData(cal_id, mid, 0, read_data)) {
+                //读取失败，提示用户
+                if (!this.Prompting()) {
+                    throw new Exception("导出终止");
+                }
             }
             if (time.compareTo(read_data.time) == 0) {
                 return mid;
@@ -139,9 +161,9 @@ public class ConsolHistory {
 
     //提示异常
     private boolean Prompting() {
-        int ret = JOptionPane.showConfirmDialog(null, "线路不稳,请检查线路后确认是否继续", "连接中断提示", JOptionPane.YES_NO_OPTION);
+        int ret = ConfirmDialog.ShowConfirmDialog("连接中断提示", "线路不稳,请检查线路后确认是否继续");
 
-        if (ret == JOptionPane.YES_OPTION) {
+        if (ret == ConfirmDialog._OK) {
             prompt_num++;
             if (prompt_num > 1) {
                 prompt_num = 0;
@@ -149,7 +171,7 @@ public class ConsolHistory {
             }
         }
 
-        return ret == JOptionPane.YES_OPTION;
+        return ret == ConfirmDialog._OK;
     }
 
     public void SaveToExcel(String path, Date start, Date end, ProcessData data) {
@@ -165,15 +187,18 @@ public class ConsolHistory {
             for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
                 //当前数据类型
                 int devtype = this.dev_type[cl_id - 1];
+
                 //当前数据个数
                 int num = this.log_num[cl_id - 1];
-                //获取设备名称
-                String[] names = ReadDataName(devtype);
-                if (names == null) {
+                
+                //设备类型位0，表示没有设备
+                if (devtype == 0) {
                     data.current_len += num;
                     continue;
                 }
-
+                //获取设备名称
+                String[] names = ReadDataName(devtype);
+               
                 //获取起点
                 int s_point = this.GetNearlistIndex(cl_id, 0, num, start);
                 //获取终点
@@ -199,7 +224,7 @@ public class ConsolHistory {
                             log_id = log_id - 1;
                             continue;
                         } else {
-                            break;
+                            throw new Exception("导出终止");
                         }
                     }
                     table.WriterLine(read_data.GetValue());
@@ -214,9 +239,11 @@ public class ConsolHistory {
             start_time = start_time / 1000;
             LogCenter.Instance().ShowMessBox(Level.SEVERE, "导出完毕" + start_time / 60 + "分钟" + start_time % 60 + "秒");
         } catch (Exception ex) {
-            LogCenter.Instance().SendFaultReport(Level.SEVERE, "保存数据失败" + ex);
+            LogCenter.Instance().SendFaultReport(Level.SEVERE, "保存数据失败 " + ex.getMessage());
         } finally {
-            this.control.instance.io_lock.unlock();
+            if (this.control.instance.io_lock.isLocked()) {
+                this.control.instance.io_lock.unlock();
+            }
         }
     }
 //
@@ -250,8 +277,8 @@ public class ConsolHistory {
 //                            //回滚一条数据
 //                            log_id = log_id - 1;
 //                            continue;
-//                        } else {
-//                            break;
+//                        } else {//                            
+//                            throw new Exception("导出终止");
 //                        }
 //                    }
 //                    table.WriterLine(read_data.GetValue());
