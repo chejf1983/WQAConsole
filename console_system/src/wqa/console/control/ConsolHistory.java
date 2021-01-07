@@ -46,22 +46,35 @@ public class ConsolHistory {
 
     // <editor-fold defaultstate="collapsed" desc="Excel导出">
     public int InitHistoryLen() throws Exception {
-        byte[] data = this.control.instance.ReadMemory(DEVTYPE.reg_add, DEVTYPE.reg_num, ModeBus_Base.def_timeout);
-        this.log_num = new int[4];
-        this.dev_type = new int[4];
+//        this.control.instance.io_lock.lock();
+//        try {
+            byte[] data = this.control.instance.ReadMemory(DEVTYPE.reg_add, DEVTYPE.reg_num, ModeBus_Base.def_timeout);
+            this.log_num = new int[4];
+            this.dev_type = new int[4];
 
-        for (int i = 0; i < this.dev_type.length; i++) {
-            this.dev_type[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
-        }
+            for (int i = 0; i < this.dev_type.length; i++) {
+                this.dev_type[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
+            }
 
-        data = this.control.instance.ReadMemory(LOGNUM.reg_add, LOGNUM.reg_num, ModeBus_Base.def_timeout);
-        int total_num = 0;
-        for (int i = 0; i < this.log_num.length; i++) {
-            this.log_num[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
-            total_num += this.log_num[i];
-        }
+            data = this.control.instance.ReadMemory(LOGNUM.reg_add, LOGNUM.reg_num, ModeBus_Base.def_timeout);
+            int total_num = 0;
+            for (int i = 0; i < this.log_num.length; i++) {
+                this.log_num[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
+                total_num += this.log_num[i];
+            }
 
-        return total_num;
+            return total_num;
+//        } finally {
+//            this.control.instance.io_lock.unlock();
+//        }
+    }
+
+    public int[] getLog_num() {
+        return log_num;
+    }
+
+    public int[] getDev_type() {
+        return dev_type;
     }
 
     //channel 通道号， id log编号， d_num 读取数据个数, data 返回数据
@@ -190,7 +203,7 @@ public class ConsolHistory {
 
                 //当前数据个数
                 int num = this.log_num[cl_id - 1];
-                
+
                 //设备类型位0，表示没有设备
                 if (devtype == 0) {
                     data.current_len += num;
@@ -198,7 +211,7 @@ public class ConsolHistory {
                 }
                 //获取设备名称
                 String[] names = ReadDataName(devtype);
-               
+
                 //获取起点
                 int s_point = this.GetNearlistIndex(cl_id, 0, num, start);
                 //获取终点

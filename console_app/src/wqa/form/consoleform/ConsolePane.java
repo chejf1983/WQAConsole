@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import nahon.comm.event.Event;
 import nahon.comm.event.EventListener;
 import nahon.comm.faultsystem.LogCenter;
@@ -37,7 +38,7 @@ public class ConsolePane extends javax.swing.JPanel {
         initComponents();
         this.console = instance;
         this.Label_CAddr.setText("控制器:" + this.console.GetAddr());
-        
+
         Button_Load.setVisible(false);
         Button_BackUp.setVisible(false);
 
@@ -81,6 +82,7 @@ public class ConsolePane extends javax.swing.JPanel {
         jLabel5 = new javax.swing.JLabel();
         TextField_end_time = new javax.swing.JTextField();
         Button_BackUp = new javax.swing.JButton();
+        Button_ShowHistoryNum = new javax.swing.JButton();
 
         setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
@@ -135,6 +137,13 @@ public class ConsolePane extends javax.swing.JPanel {
             }
         });
 
+        Button_ShowHistoryNum.setText("记录数目");
+        Button_ShowHistoryNum.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                Button_ShowHistoryNumActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -152,23 +161,26 @@ public class ConsolePane extends javax.swing.JPanel {
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                         .addContainerGap())
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel4)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(TextField_start_time, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(Button_Load, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(Button_Load, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(Button_BackUp, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(8, 8, 8)
                                 .addComponent(jLabel5)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(TextField_end_time)
+                                .addComponent(TextField_end_time, javax.swing.GroupLayout.DEFAULT_SIZE, 168, Short.MAX_VALUE)
                                 .addGap(8, 8, 8))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(Button_BackUp, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(8, 8, 8)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(Button_ShowHistoryNum, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(Button_ReadHistory, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addContainerGap())))))
         );
@@ -183,18 +195,21 @@ public class ConsolePane extends javax.swing.JPanel {
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 199, Short.MAX_VALUE)
                 .addGap(10, 10, 10)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel4)
-                        .addComponent(TextField_start_time, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel4)
+                            .addComponent(TextField_start_time, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(Button_BackUp)
+                            .addComponent(Button_Load)
+                            .addComponent(Button_ShowHistoryNum)))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel5)
                             .addComponent(TextField_end_time, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(Button_BackUp)
-                            .addComponent(Button_ReadHistory)
-                            .addComponent(Button_Load))))
+                        .addComponent(Button_ReadHistory)))
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -320,11 +335,23 @@ public class ConsolePane extends javax.swing.JPanel {
         }
     }//GEN-LAST:event_Button_BackUpActionPerformed
 
+    private void Button_ShowHistoryNumActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Button_ShowHistoryNumActionPerformed
+        int[] nums = this.console.ShowHistoryNum();
+        if (nums.length > 0) {
+            String info = "";
+            for(int i = 0; i < nums.length; i++){
+                info += "通道" + (i + 1) + ":" + nums[i] + " ";
+            }
+            JOptionPane.showMessageDialog(this, "当前控制器记录个数:" + info);
+        }
+    }//GEN-LAST:event_Button_ShowHistoryNumActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Button_BackUp;
     private javax.swing.JButton Button_Load;
     private javax.swing.JButton Button_ReadHistory;
+    private javax.swing.JButton Button_ShowHistoryNum;
     private javax.swing.JLabel Label_CAddr;
     private javax.swing.JLabel Label_Message;
     private javax.swing.JTable Table_data;

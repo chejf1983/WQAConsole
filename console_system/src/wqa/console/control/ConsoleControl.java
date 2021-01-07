@@ -7,6 +7,7 @@ package wqa.console.control;
 
 import modebus.pro.ModeBus_Base;
 import modebus.pro.NahonConvert;
+import modebus.pro.Register;
 import nahon.comm.event.EventCenter;
 
 /**
@@ -46,6 +47,24 @@ public class ConsoleControl {
         } catch (Exception ex) {
             CollectData.CreateEvent(new CollectData(8));
             this.SetMessage("采集失败");
+        } finally {
+            this.instance.io_lock.unlock();
+        }
+    }
+
+    public int[] ShowHistoryNum() {
+        this.instance.io_lock.lock();
+        try {
+            Register LOGNUM = new Register(0x40, 8);
+            byte[] data = this.instance.ReadMemory(LOGNUM.reg_add, LOGNUM.reg_num, ModeBus_Base.def_timeout);
+            int[] log_num = new int[4];
+            for (int i = 0; i < log_num.length; i++) {
+                log_num[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
+            }
+            return log_num;
+        } catch (Exception ex) {
+            this.SetMessage("采集失败");
+            return new int[0];
         } finally {
             this.instance.io_lock.unlock();
         }
