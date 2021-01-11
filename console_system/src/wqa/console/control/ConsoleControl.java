@@ -5,10 +5,12 @@
  */
 package wqa.console.control;
 
+import java.util.logging.Level;
 import modebus.pro.ModeBus_Base;
 import modebus.pro.NahonConvert;
 import modebus.pro.Register;
 import nahon.comm.event.EventCenter;
+import nahon.comm.faultsystem.LogCenter;
 
 /**
  *
@@ -63,7 +65,7 @@ public class ConsoleControl {
             }
             return log_num;
         } catch (Exception ex) {
-            this.SetMessage("采集失败");
+            LogCenter.Instance().SendFaultReport(Level.SEVERE, "采集失败");
             return new int[0];
         } finally {
             this.instance.io_lock.unlock();

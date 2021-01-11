@@ -41,7 +41,6 @@ public class ConsolePane extends javax.swing.JPanel {
 
         Button_Load.setVisible(false);
         Button_BackUp.setVisible(false);
-
         InitTimeText();
         instance.CollectData.RegeditListener(new EventListener<CollectData>() {
             @Override
@@ -230,6 +229,7 @@ public class ConsolePane extends javax.swing.JPanel {
         this.Button_BackUp.setEnabled(value);
         this.Button_Load.setEnabled(value);
         Button_ReadHistory.setEnabled(value);
+        this.Button_ShowHistoryNum.setEnabled(value);
     }
 
     private void ShowProcess() {
@@ -336,13 +336,16 @@ public class ConsolePane extends javax.swing.JPanel {
     }//GEN-LAST:event_Button_BackUpActionPerformed
 
     private void Button_ShowHistoryNumActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Button_ShowHistoryNumActionPerformed
-        int[] nums = this.console.ShowHistoryNum();
-        if (nums.length > 0) {
-            String info = "";
-            for(int i = 0; i < nums.length; i++){
-                info += "通道" + (i + 1) + ":" + nums[i] + " ";
+        if (CheckCondition()) {
+            int[] nums = this.console.ShowHistoryNum();
+            if (nums.length > 0) {
+                String info = "";
+                for (int i = 0; i < nums.length; i++) {
+                    info += "通道" + (i + 1) + ":" + nums[i] + " ";
+                }
+                JOptionPane.showMessageDialog(this, "当前控制器记录个数:" + info);
             }
-            JOptionPane.showMessageDialog(this, "当前控制器记录个数:" + info);
+            EnableButton(true);
         }
     }//GEN-LAST:event_Button_ShowHistoryNumActionPerformed
 

@@ -5,9 +5,13 @@
  */
 package wqa.console.control;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
@@ -48,22 +52,22 @@ public class ConsolHistory {
     public int InitHistoryLen() throws Exception {
 //        this.control.instance.io_lock.lock();
 //        try {
-            byte[] data = this.control.instance.ReadMemory(DEVTYPE.reg_add, DEVTYPE.reg_num, ModeBus_Base.def_timeout);
-            this.log_num = new int[4];
-            this.dev_type = new int[4];
+        byte[] data = this.control.instance.ReadMemory(DEVTYPE.reg_add, DEVTYPE.reg_num, ModeBus_Base.def_timeout);
+        this.log_num = new int[4];
+        this.dev_type = new int[4];
 
-            for (int i = 0; i < this.dev_type.length; i++) {
-                this.dev_type[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
-            }
+        for (int i = 0; i < this.dev_type.length; i++) {
+            this.dev_type[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
+        }
 
-            data = this.control.instance.ReadMemory(LOGNUM.reg_add, LOGNUM.reg_num, ModeBus_Base.def_timeout);
-            int total_num = 0;
-            for (int i = 0; i < this.log_num.length; i++) {
-                this.log_num[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
-                total_num += this.log_num[i];
-            }
+        data = this.control.instance.ReadMemory(LOGNUM.reg_add, LOGNUM.reg_num, ModeBus_Base.def_timeout);
+        int total_num = 0;
+        for (int i = 0; i < this.log_num.length; i++) {
+            this.log_num[i] = NahonConvert.ByteArrayToUShort(data, i * 2);
+            total_num += this.log_num[i];
+        }
 
-            return total_num;
+        return total_num;
 //        } finally {
 //            this.control.instance.io_lock.unlock();
 //        }
@@ -318,37 +322,63 @@ public class ConsolHistory {
     public void BackUp(String path, ProcessData data) {
         File bakfile = new File(path + "/控制器" + control.GetAddr() + "数据备份.bak");
         this.control.instance.io_lock.lock();
-        try (FileOutputStream outStream = new FileOutputStream(bakfile)) {
+        try (BufferedWriter outStream = new BufferedWriter(new FileWriter(bakfile))) {
+//        try (FileOutputStream outStream = new FileOutputStream(bakfile)) {
             outStream.flush();
             //写文件头信息
-            outStream.write(NahonConvert.IntegerToByteArray(HEAD));
+//            outStream.write(NahonConvert.IntegerToByteArray(HEAD));
 
             this.InitHistoryLen();
             //写通道个数
-            outStream.write(NahonConvert.IntegerToByteArray(this.log_num.length));
+            outStream.write("通道个数:|" + this.log_num.length + "\n");
+//            outStream.write(NahonConvert.IntegerToByteArray(this.log_num.length));
             for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
                 data.total_len += this.log_num[cl_id - 1];
                 //保存条数
-                outStream.write(NahonConvert.IntegerToByteArray(this.log_num[cl_id - 1]));
+//                outStream.write(NahonConvert.IntegerToByteArray(this.log_num[cl_id - 1]));
+                outStream.write("通道" + cl_id + "记录数量:|" + this.log_num[cl_id - 1] + "\n");
             }
 
             for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
                 int num = this.log_num[cl_id - 1];
 
                 for (int log_id = 0; log_id < num; log_id++) {
-                    this.control.instance.WriterMemory(CID.reg_add, 3,
-                            NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
-                                    NahonConvert.UShortToByteArray(log_id),
-                                    NahonConvert.UShortToByteArray(READCMD)),
-                            ModeBus_Base.def_timeout);
-                    byte[] ReadMemory = this.control.instance.ReadMemory(LOG.reg_add, LOG.reg_num, ModeBus_Base.def_timeout);
-                    //写数据（24Bytes）
-                    outStream.write(ReadMemory);
-                    data.current_len++;
+                    CollectData read_data = new CollectData(4);
+                    if (!ReadData(cl_id, log_id, 4, read_data)) {
+                        //读取失败，提示用户
+                        if (this.Prompting()) {
+                            //回滚一条数据
+                            log_id = log_id - 1;
+                        } else {
+                            throw new Exception("导出终止");
+                        }
+                    } else {
+                        outStream.write(cl_id + "|" + log_id + "|" + read_data.toString() + "\n");
+                        data.current_len++;
+                    }
+//                    try {
+//                        this.control.instance.WriterMemory(CID.reg_add, 3,
+//                                NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
+//                                        NahonConvert.UShortToByteArray(log_id),
+//                                        NahonConvert.UShortToByteArray(READCMD)),
+//                                ModeBus_Base.def_timeout);
+//
+//                        byte[] ReadMemory = this.control.instance.ReadMemory(LOG.reg_add, LOG.reg_num, ModeBus_Base.def_timeout);
+//                        //写数据（24Bytes）
+//                        outStream.write(ReadMemory);
+//                        data.current_len++;
+//                    } catch (Exception ex) {
+//                        if (this.Prompting()) {
+//                            //回滚一条数据
+//                            log_id = log_id - 1;
+//                        } else {
+//                            throw new Exception("导出终止");
+//                        }
+//                    }
                 }
 
                 //保存条数
-                outStream.write(NahonConvert.IntegerToByteArray(END));
+//                outStream.write(NahonConvert.IntegerToByteArray(END));
             }
             LogCenter.Instance().ShowMessBox(Level.SEVERE, "备份成功");
         } catch (Exception ex) {
@@ -358,93 +388,138 @@ public class ConsolHistory {
         }
     }
 
-    private void WriteLine(int cl_id, int log_id, byte[] data) throws Exception {
-        //写入记录
-        this.control.instance.WriterMemory(LOG.reg_add, LOG.reg_num, data, ModeBus_Base.def_timeout);
-        //启动功能
-        this.control.instance.WriterMemory(CID.reg_add, 3,
-                NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
-                        NahonConvert.UShortToByteArray(log_id),
-                        NahonConvert.UShortToByteArray(WRITCMD)),
-                ModeBus_Base.def_timeout);
+    private void WriteLine(int cl_id, int log_id, CollectData cdata) throws Exception {
+        while (true) {
+            try {
+                //写入记录
+//                this.control.instance.WriterMemory(LOG.reg_add, LOG.reg_num, cdata.toByteArray(), ModeBus_Base.def_timeout);
+                //启动功能
+                this.control.instance.WriterMemory(CID.reg_add, 3 + LOG.reg_num,
+                        NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
+                                NahonConvert.UShortToByteArray(log_id),
+                                NahonConvert.UShortToByteArray(WRITCMD), cdata.toByteArray()),
+                        ModeBus_Base.def_timeout);
+                break;
+            } catch (Exception ex) {
+                if (!this.Prompting()) {
+                    throw new Exception("导出终止");
+                }
+            }
+        }
     }
 
     private void UpdateClNum(int cl_id, int log_num) throws Exception {
-        //更新记录条数
-        this.control.instance.WriterMemory(LOGNUM.reg_add + cl_id - 1, 1,
-                NahonConvert.UShortToByteArray(log_num),
-                ModeBus_Base.def_timeout);
-        //使能更新记录条数
-        this.control.instance.WriterMemory(CID.reg_add, 3,
-                NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
-                        NahonConvert.UShortToByteArray(0),
-                        NahonConvert.UShortToByteArray(SETCMD)),
-                ModeBus_Base.def_timeout);
+        while (true) {
+            try {
+                //使能更新记录条数
+                this.control.instance.WriterMemory(CID.reg_add, 3,
+                        NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
+                                NahonConvert.UShortToByteArray(log_num),
+                                NahonConvert.UShortToByteArray(SETCMD)),
+                        ModeBus_Base.def_timeout);
+                break;
+            } catch (Exception ex) {
+                if (!this.Prompting()) {
+                    throw new Exception("导出终止");
+                }
+            }
+        }
     }
 
     private void CleanCl(int cl_id) throws Exception {
-        //清除通道数据
-        this.control.instance.WriterMemory(CID.reg_add, 3,
-                NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
-                        NahonConvert.UShortToByteArray(0),
-                        NahonConvert.UShortToByteArray(CLEANCMD)),
-                ModeBus_Base.def_timeout);
+        while (true) {
+            try {
+                //清除通道数据
+                this.control.instance.WriterMemory(CID.reg_add, 3,
+                        NahonConvert.Cat(NahonConvert.UShortToByteArray(cl_id),
+                                NahonConvert.UShortToByteArray(0),
+                                NahonConvert.UShortToByteArray(CLEANCMD)),
+                        ModeBus_Base.def_timeout);
 
-        this.UpdateClNum(cl_id, 0);
+                this.UpdateClNum(cl_id, 0);
+                break;
+            } catch (Exception ex) {
+                if (!this.Prompting()) {
+                    throw new Exception("导出终止");
+                }
+            }
+        }
+    }
+
+    public static void main(String... args) {
+        String test = "通道个数:|4";
+        String[] scl_num = test.split("\\|");
+        for (String tmp : scl_num) {
+            System.out.println(tmp);
+        }
     }
 
     public void LoadBackUp(String path, ProcessData data) {
         File file = new File(path);
         this.control.instance.io_lock.lock();
+        String sline = "";
         try (FileInputStream inStream = new FileInputStream(file)) {
 
-            byte[] Line = new byte[4];
-            //读取文件头
-            inStream.read(Line);
-            int head = NahonConvert.ByteArrayToInteger(Line, 0);
-            if (head != HEAD) {
-                throw new Exception("非法文件");
-            }
-
+            BufferedReader br = new BufferedReader(new InputStreamReader(inStream, "UTF-8"));
             //读取通道数
-            inStream.read(Line);
-            int cl_num = NahonConvert.ByteArrayToInteger(Line, 0);
+            sline = br.readLine();
+            String scl_num = sline.split("\\|")[1];
+//            int cl_num = NahonConvert.ByteArrayToInteger(Line, 0);
+            int cl_num = Integer.valueOf(scl_num);
             this.log_num = new int[cl_num];
             for (int cl_id = 1; cl_id <= cl_num; cl_id++) {
-                Line = new byte[4];
-                //读取记录条数
-                inStream.read(Line);
-                log_num[cl_id - 1] = NahonConvert.ByteArrayToInteger(Line, 0);
+//                Line = new byte[4];
+//                //读取记录条数
+//                inStream.read(Line);
+//                log_num[cl_id - 1] = NahonConvert.ByteArrayToInteger(Line, 0);
+
+                sline = br.readLine();
+                String slog_num = sline.split("\\|")[1];
+                log_num[cl_id - 1] = Integer.valueOf(slog_num);
                 data.total_len += log_num[cl_id - 1];
             }
 
-            for (int cl_id = 1; cl_id <= this.log_num.length; cl_id++) {
-                //清除控制器通道历史数据
-                CleanCl(cl_id);
-                //写入数据
-                for (int log_id = 0; log_id < log_num[cl_id - 1]; log_id++) {
-                    //读取记录
-                    Line = new byte[24];
-                    inStream.read(Line);
-                    WriteLine(cl_id, log_id, Line);
+            int log_id = 0;
+            int cl_id = 0;
+            while (true) {
+                //检查是否结束
+                sline = br.readLine();
+                if (sline == null) {
+                    //结束前，把最后一个通道更新下记录
+                    if (cl_id > 0) {
+                        //更新记录
+                        UpdateClNum(cl_id, log_id);
+                    }
+                    break;
                 }
-                //更新记录
-                UpdateClNum(cl_id, log_num[cl_id - 1]);
+                String[] pars = sline.split("\\|");
+                Integer tclid = Integer.valueOf(pars[0]);
+                if (tclid != cl_id) {
+                    //切换通道时
+                    if (cl_id > 0) {
+                        //更新记录
+                        UpdateClNum(cl_id, log_id);
+                    }
+                    cl_id = tclid;
+                    log_id = 0;
+                    //清除控制器新通道历史数据
+                    CleanCl(cl_id);
+                }
 
-                Line = new byte[4];
-                inStream.read(Line);
-                int end = NahonConvert.ByteArrayToInteger(Line, 0);
-                if (end != END) {
-                    throw new Exception("非法文件");
-                }
+                String[] partmp = new String[pars.length - 2];
+                System.arraycopy(pars, 2, partmp, 0, partmp.length);
+                CollectData cdata = new CollectData(partmp);
+                WriteLine(cl_id, log_id, cdata);
+                log_id++;
+                data.current_len++;
             }
             LogCenter.Instance().ShowMessBox(Level.SEVERE, "导入成功");
         } catch (Exception ex) {
-            LogCenter.Instance().SendFaultReport(Level.SEVERE, "导入数据失败" + ex);
+            LogCenter.Instance().SendFaultReport(Level.SEVERE, "导入数据失败:" + ex + "当前读取数据" + sline);
         } finally {
             this.control.instance.io_lock.unlock();
         }
     }
-    // </editor-fold> 
+// </editor-fold> 
 
 }
