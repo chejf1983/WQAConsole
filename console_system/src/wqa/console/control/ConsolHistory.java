@@ -12,11 +12,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
 import modebus.pro.ModeBus_Base;
 import modebus.pro.NahonConvert;
+import modebus.pro.NahonConvertException;
 import modebus.pro.Register;
 import nahon.comm.exl2.XlsSheetWriter;
 import nahon.comm.exl2.xlsTable_W;
@@ -445,15 +447,6 @@ public class ConsolHistory {
             }
         }
     }
-
-    public static void main(String... args) {
-        String test = "通道个数:|4";
-        String[] scl_num = test.split("\\|");
-        for (String tmp : scl_num) {
-            System.out.println(tmp);
-        }
-    }
-
     public void LoadBackUp(String path, ProcessData data) {
         File file = new File(path);
         this.control.instance.io_lock.lock();
@@ -522,4 +515,16 @@ public class ConsolHistory {
     }
 // </editor-fold> 
 
+    public static void main(String... args) throws ParseException, NahonConvertException {
+        String input = "1|473|2020-12-10 13:46:26|0|8.164591|15.414978|0.0|0.0";
+        String[] pars = input.split("\\|");
+        String[] partmp = new String[pars.length - 2];
+        System.arraycopy(pars, 2, partmp, 0, partmp.length);
+        CollectData cdata = new CollectData(partmp);
+        System.out.println(cdata);
+        byte[] toByteArray = cdata.toByteArray();
+        for(int i = 0; i < toByteArray.length; i++){
+            System.out.println(String.format("%X", toByteArray[i]));
+        }
+    }
 }

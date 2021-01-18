@@ -70,7 +70,7 @@ public class CollectData implements IJXLSaver {
         int year = calendar.get(Calendar.YEAR);
         ret[0] = (byte) (year / 100);
         ret[1] = (byte) (year % 100);
-        ret[2] = (byte) (calendar.get(Calendar.MONTH));
+        ret[2] = (byte) (calendar.get(Calendar.MONTH) + 1);
         ret[3] = (byte) (calendar.get(Calendar.DAY_OF_MONTH));
         ret[4] = (byte) (calendar.get(Calendar.HOUR_OF_DAY));
         ret[5] = (byte) (calendar.get(Calendar.MINUTE));
