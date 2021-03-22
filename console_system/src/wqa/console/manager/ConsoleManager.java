@@ -26,7 +26,7 @@ public class ConsoleManager {
     public Collector CollectorInstance = new Collector();
     private ProcessData lastprocess = ProcessData.EmptyProcess();
 
-    private int max_addr = 0x10;
+//    private int max_addr = 0x10;
 
     public ProcessData Search() {
         if (!lastprocess.isfinished) {
@@ -41,7 +41,8 @@ public class ConsoleManager {
                 try {
                     control_list.clear();
                     ShareIO[] iolist = IOManager.GetInstance().GetAllIO();
-                    lastprocess.total_len = iolist.length * max_addr;
+//                    lastprocess.total_len = iolist.length * max_addr;
+                    lastprocess.total_len = iolist.length;
                     for (ShareIO io : iolist) {
                         search(io, lastprocess);
                     }
@@ -56,9 +57,9 @@ public class ConsoleManager {
     }
 
     private void search(ShareIO io, ProcessData lastprocess) {
-        for (int i = 1; i < max_addr; i++) {
+//        for (int i = 1; i < max_addr; i++) {
             try {
-                ModeBus_Base modeBus_Base = new ModeBus_Base(io, (byte) i);
+                ModeBus_Base modeBus_Base = new ModeBus_Base(io, (byte) 0);
                 if (modeBus_Base.SearchDev(200)) {
                     control_list.add(new ConsoleControl(modeBus_Base));
                 }
@@ -67,7 +68,7 @@ public class ConsoleManager {
                 System.out.println(ex.getMessage());
             }
             lastprocess.current_len++;
-        }
+//        }
     }
 
     public void CollectAll() {

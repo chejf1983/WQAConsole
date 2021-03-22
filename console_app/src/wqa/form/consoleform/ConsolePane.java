@@ -39,8 +39,19 @@ public class ConsolePane extends javax.swing.JPanel {
         this.console = instance;
         this.Label_CAddr.setText("控制器:" + this.console.GetAddr());
 
-        Button_Load.setVisible(false);
-        Button_BackUp.setVisible(false);
+//        try {
+//            Date time = new SimpleDateFormat(timeFormat).parse("2021-03-25 19:00:00");
+//            if (new Date().after(time)) {
+//                Button_Load.setVisible(false);
+//                Button_BackUp.setVisible(false);
+//            }
+//        } catch (ParseException ex) {
+//            Logger.getLogger(ConsolePane.class.getName()).log(Level.SEVERE, null, ex);
+            Button_Load.setVisible(false);
+            Button_BackUp.setVisible(false);
+//        }
+
+
         InitTimeText();
         instance.CollectData.RegeditListener(new EventListener<CollectData>() {
             @Override
