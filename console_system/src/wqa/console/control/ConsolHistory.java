@@ -154,24 +154,26 @@ public class ConsolHistory {
 
     //查找指定时间对应的数据，折半查找
     private int GetNearlistIndex(int cal_id, int start, int end, Date time) throws Exception {
+        CollectData read_data = new CollectData(0);
         int mid = (int) ((end + start) / 2);
-        if (mid == start) {
+        while (!ReadData(cal_id, mid, 0, read_data)) {
+            //读取失败，提示用户
+            if (!this.Prompting()) {
+                throw new Exception("导出终止");
+            }
+        }
+        if (time.compareTo(read_data.time) == 0) {
             return mid;
+        } else if (time.compareTo(read_data.time) < 0) {
+            if (start == mid) {
+                return start;
+            }
+            return GetNearlistIndex(cal_id, start, mid, time);
         } else {
-            CollectData read_data = new CollectData(0);
-            while (!ReadData(cal_id, mid, 0, read_data)) {
-                //读取失败，提示用户
-                if (!this.Prompting()) {
-                    throw new Exception("导出终止");
-                }
+            if (start == mid) {
+                return end;
             }
-            if (time.compareTo(read_data.time) == 0) {
-                return mid;
-            } else if (time.compareTo(read_data.time) < 0) {
-                return GetNearlistIndex(cal_id, start, mid, time);
-            } else {
-                return GetNearlistIndex(cal_id, mid, end, time);
-            }
+            return GetNearlistIndex(cal_id, mid, end, time);
         }
     }
 
@@ -446,6 +448,7 @@ public class ConsolHistory {
             }
         }
     }
+
     public void LoadBackUp(String path, ProcessData data) {
         File file = new File(path);
         this.control.instance.io_lock.lock();
@@ -522,7 +525,7 @@ public class ConsolHistory {
         CollectData cdata = new CollectData(partmp);
         System.out.println(cdata);
         byte[] toByteArray = cdata.toByteArray();
-        for(int i = 0; i < toByteArray.length; i++){
+        for (int i = 0; i < toByteArray.length; i++) {
             System.out.println(String.format("%X", toByteArray[i]));
         }
     }
