@@ -276,28 +276,25 @@ public class MainForm extends javax.swing.JFrame {
         
         Button_Search.setEnabled(false);
         ProcessData ret = WQAPlatform.GetInstance().GetManager().Search();
-        WQAPlatform.GetInstance().GetThreadPool().submit(new Runnable() {
-            @Override
-            public void run() {
-                while (!ret.isfinished) {
-                    java.awt.EventQueue.invokeLater(() -> {
-                        process_bar.setMaximum(ret.total_len);
-                        process_bar.setValue(ret.current_len);
-                    });
-                    
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(MainForm.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
+        WQAPlatform.GetInstance().GetThreadPool().submit(() -> {
+            while (!ret.isfinished) {
                 java.awt.EventQueue.invokeLater(() -> {
-                    process_bar.setValue(0);
-                    work_area.Reflesh();
-                    Button_Search.setEnabled(true);
+                    process_bar.setMaximum(ret.total_len);
+                    process_bar.setValue(ret.current_len);
                 });
-                WQAPlatform.GetInstance().GetManager().CollectorInstance.Collect();
+
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(MainForm.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
+            java.awt.EventQueue.invokeLater(() -> {
+                process_bar.setValue(0);
+                work_area.Reflesh();
+                Button_Search.setEnabled(true);
+            });
+            WQAPlatform.GetInstance().GetManager().CollectorInstance.Collect();
         });
     }//GEN-LAST:event_Button_SearchActionPerformed
 
